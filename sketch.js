@@ -1,21 +1,3 @@
-/*
-Week 5 — Example 5: Side-Scroller Platformer with JSON Levels + Modular Camera
-
-Course: GBDA302 | Instructors: Dr. Karen Cochrane & David Han
-Date: Feb. 12, 2026
-
-Move: WASD/Arrows | Jump: Space
-
-Learning goals:
-- Build a side-scrolling platformer using modular game systems
-- Load complete level definitions from external JSON (LevelLoader + levels.json)
-- Separate responsibilities across classes (Player, Platform, Camera, World)
-- Implement gravity, jumping, and collision with platforms
-- Use a dedicated Camera2D class for smooth horizontal tracking
-- Support multiple levels and easy tuning through data files
-- Explore scalable project architecture for larger games
-*/
-
 const VIEW_W = 800;
 const VIEW_H = 480;
 
@@ -26,8 +8,12 @@ let level;
 let player;
 let cam;
 
+// Coins
+let coins = [];
+const NUM_COINS = 15;
+
 function preload() {
-  allLevelsData = loadJSON("levels.json"); // levels.json beside index.html [web:122]
+  allLevelsData = loadJSON("levels.json");
 }
 
 function setup() {
@@ -48,10 +34,22 @@ function loadLevel(i) {
   cam.x = player.x - width / 2;
   cam.y = 0;
   cam.clampToWorld(level.w, level.h);
+
+  spawnCoins();
+}
+
+// Spawn coins on random platforms
+function spawnCoins() {
+  coins = [];
+  for (let i = 0; i < NUM_COINS; i++) {
+    let p = random(level.platforms);
+    let x = random(p.x + 10, p.x + p.w - 10);
+    let y = p.y - 10;
+    coins.push({ x, y, r: 10 });
+  }
 }
 
 function draw() {
-  // --- game state ---
   player.update(level);
 
   // Fall death → respawn
@@ -60,15 +58,34 @@ function draw() {
     return;
   }
 
-  // --- view state (data-driven smoothing) ---
+  // Camera
   cam.followSideScrollerX(player.x, level.camLerp);
   cam.y = 0;
   cam.clampToWorld(level.w, level.h);
 
-  // --- draw ---
   cam.begin();
   level.drawWorld();
-  player.draw(level.theme.blob);
+
+  // Draw coins
+  fill("#FFD700");
+  noStroke();
+  for (let c of coins) ellipse(c.x, c.y, c.r * 2);
+
+  // Collect coins
+  for (let i = coins.length - 1; i >= 0; i--) {
+    let c = coins[i];
+    let d = dist(player.x, player.y, c.x, c.y);
+    if (d < player.r + c.r) {
+      coins.splice(i, 1);
+      // Respawn on random platform
+      let p = random(level.platforms);
+      let x = random(p.x + 10, p.x + p.w - 10);
+      let y = p.y - 10;
+      coins.push({ x, y, r: 10 });
+    }
+  }
+
+  player.draw();
   cam.end();
 
   // HUD
@@ -76,21 +93,7 @@ function draw() {
   noStroke();
   text(level.name + " (Example 5)", 10, 18);
   text("A/D or ←/→ move • Space/W/↑ jump • Fall = respawn", 10, 36);
-  text("camLerp(JSON): " + level.camLerp + "  world.w: " + level.w, 10, 54);
-  text("cam: " + cam.x + ", " + cam.y, 10, 90);
-  const p0 = level.platforms[0];
-  text(`p0: x=${p0.x} y=${p0.y} w=${p0.w} h=${p0.h}`, 10, 108);
-
-  text(
-    "platforms: " +
-      level.platforms.length +
-      " start: " +
-      level.start.x +
-      "," +
-      level.start.y,
-    10,
-    72,
-  );
+  text("Coins: " + coins.length, 10, 54);
 }
 
 function keyPressed() {

@@ -16,13 +16,6 @@ class BlobPlayer {
     this.frictionGround = 0.88;
 
     this.onGround = false;
-
-    // wobble visuals
-    this.t = 0;
-    this.tSpeed = 0.01;
-    this.wobble = 7;
-    this.points = 48;
-    this.wobbleFreq = 0.9;
   }
 
   spawnFromLevel(level) {
@@ -46,7 +39,6 @@ class BlobPlayer {
   }
 
   update(level) {
-    // input
     let move = 0;
     if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) move -= 1;
     if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) move += 1;
@@ -57,7 +49,6 @@ class BlobPlayer {
 
     this.vy += this.gravity;
 
-    // collider box
     let box = {
       x: this.x - this.r,
       y: this.y - this.r,
@@ -91,31 +82,34 @@ class BlobPlayer {
       }
     }
 
-    // write back
     this.x = box.x + box.w / 2;
     this.y = box.y + box.h / 2;
 
-    // keep inside world horizontally, allow falling below world
     this.x = constrain(this.x, this.r, level.w - this.r);
-
-    this.t += this.tSpeed;
   }
 
-  draw(colHex) {
-    fill(color(colHex));
+  draw() {
+    // face
+    fill("#FFFF00");
+    stroke(0);
+    strokeWeight(2);
+    ellipse(this.x, this.y, this.r * 2, this.r * 2);
+
+    // eyes
+    fill(0);
     noStroke();
-    beginShape();
-    for (let i = 0; i < this.points; i++) {
-      const a = (i / this.points) * TAU;
-      const n = noise(
-        cos(a) * this.wobbleFreq + 100,
-        sin(a) * this.wobbleFreq + 100,
-        this.t,
-      );
-      const rr = this.r + map(n, 0, 1, -this.wobble, this.wobble);
-      vertex(this.x + cos(a) * rr, this.y + sin(a) * rr);
-    }
-    endShape(CLOSE);
+    let eyeOffsetX = this.r * 0.4;
+    let eyeOffsetY = -this.r * 0.2;
+    let eyeSize = this.r * 0.2;
+    ellipse(this.x - eyeOffsetX, this.y + eyeOffsetY, eyeSize, eyeSize);
+    ellipse(this.x + eyeOffsetX, this.y + eyeOffsetY, eyeSize, eyeSize);
+
+    // smile
+    noFill();
+    stroke(0);
+    strokeWeight(2);
+    let smileRadius = this.r * 0.6;
+    arc(this.x, this.y + this.r * 0.1, smileRadius, smileRadius, 0, PI);
   }
 
   static overlap(a, b) {
